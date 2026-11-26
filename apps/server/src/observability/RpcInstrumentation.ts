@@ -273,6 +273,10 @@ const RPC_AGGREGATES = {
   [WS_METHODS.subscribeServerConfig]: "server",
   [WS_METHODS.subscribeServerLifecycle]: "server",
   [WS_METHODS.subscribeAuthAccess]: "auth",
+  [WS_METHODS.selfHostedRelayGetStatus]: "relay",
+  [WS_METHODS.selfHostedRelaySubscribeStatus]: "relay",
+  [WS_METHODS.selfHostedRelayConnect]: "relay",
+  [WS_METHODS.selfHostedRelayDisconnect]: "relay",
 } as const satisfies Readonly<Record<WsRpcMethod, string>>;
 
 const RPC_SPAN_PREFIX = "ws.rpc";

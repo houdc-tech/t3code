@@ -2,10 +2,17 @@ import { EasDeviceHostConfigs, SimlockDeviceHostConfigs, SshDeviceHostConfigs } 
 import {
   AuthOrchestrationOperateScope,
   AuthAccessWriteScope,
+  AuthRelayConfigureScope,
+  AuthRelayWriteScope,
   AuthSettingsWriteScope,
   AuthProvidersManageScope,
   type AuthEnvironmentScope,
 } from "./auth.ts";
+import {
+  DEFAULT_SELF_HOSTED_RELAY_SETTINGS,
+  SelfHostedRelaySettings,
+  SelfHostedRelaySettingsPatch,
+} from "./selfHostedRelay.ts";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Duration from "effect/Duration";
@@ -1658,6 +1665,10 @@ export const ServerSettings = Schema.Struct({
 
   /** Sent by the Usage tab with each summary request to this environment; edit in settings.json. Invalid values are ignored. */
   usageModelFilter: ForwardCompatibleOptional(UsageModelFilter),
+
+  selfHostedRelay: SelfHostedRelaySettings.pipe(
+    Schema.withDecodingDefault(Effect.succeed(DEFAULT_SELF_HOSTED_RELAY_SETTINGS)),
+  ),
 });
 export type ServerSettings = typeof ServerSettings.Type;
 
@@ -2049,6 +2060,8 @@ export const ServerSettingsPatch = Schema.Struct({
   usageModelAliases: Schema.optionalKey(
     Schema.Record(TrimmedNonEmptyString, Schema.NullOr(TrimmedNonEmptyString)),
   ),
+
+  selfHostedRelay: Schema.optionalKey(SelfHostedRelaySettingsPatch),
 });
 export type ServerSettingsPatch = typeof ServerSettingsPatch.Type;
 
@@ -2074,10 +2087,13 @@ export function requiredScopesForServerSettingsPatch(
   let changesProviders = false;
   let changesSettings = false;
   let changesAccess = false;
+  let changesRelay = false;
   for (const [key, value] of Object.entries(patch)) {
     if (value === undefined) continue;
     if (key === "requireConnectDeviceApproval" || key === "enablePreviewTunnel") {
       changesAccess = true;
+    } else if (key === "selfHostedRelay") {
+      changesRelay = true;
     } else if (
       key === "providers" ||
       key === "providerInstances" ||
@@ -2097,9 +2113,12 @@ export function requiredScopesForServerSettingsPatch(
     changesSettings = true;
   }
   return [
-    ...(changesSettings || (!changesProviders && !changesAccess) ? [AuthSettingsWriteScope] : []),
+    ...(changesSettings || (!changesProviders && !changesAccess && !changesRelay)
+      ? [AuthSettingsWriteScope]
+      : []),
     ...(changesProviders ? [AuthProvidersManageScope] : []),
     ...(changesAccess ? [AuthAccessWriteScope] : []),
+    ...(changesRelay ? [AuthRelayConfigureScope, AuthRelayWriteScope] : []),
     // Saving a script is choosing a command for the host to run, wherever the patch carries it.
     ...(carriesProjectScripts(patch) ? [AuthOrchestrationOperateScope] : []),
   ];

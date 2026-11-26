@@ -7,6 +7,7 @@ import {
   type ProviderInstanceConfig,
   type ProviderInstanceId,
   type ServerSettings,
+  SelfHostedRelaySettings,
   type SettingsSecretValue,
   SimlockDeviceHostConfig,
   TextGeneratorConfig,
@@ -52,6 +53,7 @@ const providerSecretFields = new Map([
 const usageLimitSecretFields = secretSettingsFields(UsageLimitSourceConfig);
 const textGeneratorSecretFields = secretSettingsFields(TextGeneratorConfig);
 const voiceSecretFields = secretSettingsFields(CloudSpeechCredentials);
+const selfHostedRelaySecretFields = secretSettingsFields(SelfHostedRelaySettings);
 const easDeviceHostSecretFields = secretSettingsFields(EasDeviceHostConfig);
 const simlockDeviceHostSecretFields = secretSettingsFields(SimlockDeviceHostConfig);
 const encode = (value: string) => Buffer.from(value, "utf8").toString("base64url");
@@ -257,6 +259,11 @@ function mapSecretFieldGroups(
       voiceSecretFields,
       (provider) => `voice-cloud-${provider}`,
     ) as ServerSettings["cloudSpeechCredentials"],
+    selfHostedRelay: mapFields(
+      settings.selfHostedRelay,
+      selfHostedRelaySecretFields,
+      (field) => `self-hosted-relay-${field}`,
+    ) as ServerSettings["selfHostedRelay"],
     providerInstances,
     sourceControlHosts,
     usageLimitSources,
@@ -374,6 +381,12 @@ export function withoutRedirectedSecrets(
     ) as ServerSettings["textGenerators"],
     simlockDeviceHosts: next.simlockDeviceHosts.map((host) =>
       rebound(host, simlockHosts.get(host.id), "agentToken", "gatewayUrl"),
+    ),
+    selfHostedRelay: rebound(
+      next.selfHostedRelay,
+      current.selfHostedRelay,
+      "authCredential",
+      "serverUrl",
     ),
   };
 }

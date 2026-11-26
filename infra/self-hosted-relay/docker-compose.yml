@@ -1,0 +1,22 @@
+# Copy relay.example.toml to relay.toml and set the public hosts and secrets.
+# On Unraid, run: chown 65532:65532 relay.toml && chmod 400 relay.toml
+# Start from this directory with: docker compose up -d --build
+services:
+  relay:
+    build: .
+    restart: unless-stopped
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      # For Nginx on the host or using host networking.
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - type: bind
+        source: ./relay.toml
+        target: /etc/relay.toml
+        read_only: true
+        bind:
+          create_host_path: false

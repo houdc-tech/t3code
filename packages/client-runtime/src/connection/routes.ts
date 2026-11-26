@@ -18,6 +18,7 @@ import type { MFunctionType } from "gt-i18n/types";
 
 export type ConnectionRouteKind =
   | "relay"
+  | "self-hosted-relay"
   | "loopback"
   | "lan"
   | "tailnet"
@@ -98,9 +99,15 @@ export function connectionRouteKind(route: ConnectionRoute): ConnectionRouteKind
       return "ssh";
     case "PrimaryConnectionTarget":
     case "BearerConnectionTarget": {
+      const profile = Option.getOrNull(route.profile);
+      if (
+        profile?._tag === "BearerConnectionProfile" &&
+        profile.relayProvider === "self-hosted-relay"
+      ) {
+        return "self-hosted-relay";
+      }
       const hostname = routeHostname(route);
       if (hostname === null) return "public";
-      const profile = Option.getOrNull(route.profile);
       return directAddressKind(
         hostname,
         profile?._tag === "BearerConnectionProfile" && profile.network === "tailscale",
@@ -138,6 +145,7 @@ const ROUTE_KIND_RANK: Record<ConnectionRouteKind, number> = {
   public: 3,
   ssh: 4,
   relay: 5,
+  "self-hosted-relay": 5,
 };
 
 export function insertRoute(
@@ -189,12 +197,15 @@ function routeAddressKey(route: ConnectionRoute): string | null {
 }
 
 const T3_CONNECT_NAME = "T3 Connect";
+const SELF_HOSTED_RELAY_NAME = "Self-hosted Relay";
 
 /** The route's label in English. Display sites use `connectionRouteLabelText`. */
 export function connectionRouteLabel(route: ConnectionRoute): string {
   switch (connectionRouteKind(route)) {
     case "relay":
       return T3_CONNECT_NAME;
+    case "self-hosted-relay":
+      return SELF_HOSTED_RELAY_NAME;
     case "loopback":
       return msg("This device");
     case "lan":
@@ -426,6 +437,7 @@ function withNetwork(route: ConnectionRoute, tailscale: boolean): ConnectionRout
         wsBaseUrl: profile.wsBaseUrl,
         ...(profile.learned === undefined ? {} : { learned: profile.learned }),
         ...(profile.authorization === undefined ? {} : { authorization: profile.authorization }),
+        ...(profile.relayProvider === undefined ? {} : { relayProvider: profile.relayProvider }),
         ...(tailscale ? { network: "tailscale" as const } : {}),
       }),
     ),

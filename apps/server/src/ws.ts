@@ -293,6 +293,7 @@ import { failEnvironmentAuthInvalid, failEnvironmentInternal } from "./auth/http
 import * as SourceControlRateLimit from "@t3tools/source-control-core/server/SourceControlRateLimit";
 import { isNetworkPath } from "@t3tools/shared/path";
 import * as RelayClient from "@t3tools/shared/relayClient";
+import * as SelfHostedRelayConnector from "./selfHostedRelay/SelfHostedRelayConnector.ts";
 import {
   SOCKET_FRAME_PARTS_QUERY_PARAM,
   splitLargeSocketFrames,
@@ -1639,6 +1640,7 @@ export const layerWsRpc = (
       const processResourceMonitor = yield* ProcessResourceMonitor.ProcessResourceMonitor;
       const resourceTelemetry = yield* ResourceTelemetry.ResourceTelemetry;
       const relayClient = yield* RelayClient.RelayClient;
+      const selfHostedRelay = yield* SelfHostedRelayConnector.SelfHostedRelayConnector;
       // Webhook URLs start agents; expose them only to operate-scoped sessions while keeping tasks readable.
       const withVisibleWebhookUrls = (result: ScheduledTaskListResult): ScheduledTaskListResult =>
         currentSession.scopes.includes(AuthOrchestrationOperateScope)
@@ -2908,6 +2910,12 @@ export const layerWsRpc = (
             ),
           ),
         [WS_METHODS.cloudGetRelayClientStatus]: (_input) => relayClient.resolve,
+        [WS_METHODS.selfHostedRelayGetStatus]: (_input) => selfHostedRelay.getStatus,
+        [WS_METHODS.selfHostedRelaySubscribeStatus]: (_input) => selfHostedRelay.subscribeStatus,
+        [WS_METHODS.selfHostedRelayConnect]: (_input) =>
+          selfHostedRelay.connect.pipe(Effect.map((status) => ({ status }))),
+        [WS_METHODS.selfHostedRelayDisconnect]: (_input) =>
+          selfHostedRelay.disconnect.pipe(Effect.map((status) => ({ status }))),
         [WS_METHODS.cloudInstallRelayClient]: (_input) =>
           Stream.callback<RelayClientInstallProgressEvent, RelayClientInstallFailedError>((queue) =>
             relayClient

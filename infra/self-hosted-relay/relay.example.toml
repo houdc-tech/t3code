@@ -1,0 +1,19 @@
+listen_addr = "0.0.0.0:8080"
+heartbeat_interval_secs = 25
+stream_open_timeout_secs = 10
+max_concurrent_streams_per_device = 64
+
+# Configure each Mac's connector with its own host and token.
+# Generate each token separately with: openssl rand -hex 32
+# Include the public port in host if clients use a non-default port.
+[[devices]]
+id = "studio"
+host = "studio.relay.example.net"
+token = "replace-with-studio-secret"
+public_scheme = "https"
+
+[[devices]]
+id = "mini"
+host = "mini.relay.example.net"
+token = "replace-with-mini-secret"
+public_scheme = "https"

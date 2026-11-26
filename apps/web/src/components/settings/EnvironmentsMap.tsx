@@ -206,6 +206,8 @@ function routeKindLabel(kind: ConnectionRouteKind, gt: GT): string {
   switch (kind) {
     case "relay":
       return "T3 Connect";
+    case "self-hosted-relay":
+      return gt("Self-hosted Relay");
     case "loopback":
       return gt("This device");
     case "lan":

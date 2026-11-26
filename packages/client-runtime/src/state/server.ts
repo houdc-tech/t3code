@@ -1874,6 +1874,21 @@ export function createServerEnvironmentAtoms<R, E>(
     }),
     updateSettings,
     mutateProviderInstance: updateSettings,
+    selfHostedRelayStatus: createEnvironmentRpcSubscriptionAtomFamily(runtime, {
+      label: "environment-data:self-hosted-relay:status",
+      tag: WS_METHODS.selfHostedRelaySubscribeStatus,
+      idleTtlMs: 0,
+    }),
+    connectSelfHostedRelay: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:self-hosted-relay:connect",
+      tag: WS_METHODS.selfHostedRelayConnect,
+      concurrency: { mode: "singleFlight", key: ({ environmentId }) => environmentId },
+    }),
+    disconnectSelfHostedRelay: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:self-hosted-relay:disconnect",
+      tag: WS_METHODS.selfHostedRelayDisconnect,
+      concurrency: { mode: "singleFlight", key: ({ environmentId }) => environmentId },
+    }),
     prepareAcpRegistryAgent: createEnvironmentRpcCommand(runtime, {
       label: "environment-data:server:acp-registry:prepare",
       tag: WS_METHODS.serverPrepareAcpRegistryAgent,

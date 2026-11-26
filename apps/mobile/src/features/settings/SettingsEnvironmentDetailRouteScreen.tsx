@@ -7,6 +7,7 @@ import { useNavigation, type StaticScreenProps } from "@react-navigation/native"
 import {
   AuthProvidersManageScope,
   AuthOrchestrationReadScope,
+  AuthRelayReadScope,
   type EnvironmentId,
   type ServerProvider,
 } from "@t3tools/contracts";
@@ -57,6 +58,47 @@ export function SettingsEnvironmentDetailRouteScreen({
   );
 }
 
+function SelfHostedRelayStatusSection({
+  environmentId,
+}: {
+  readonly environmentId: EnvironmentId;
+}) {
+  const gt = useGT();
+  const statusResult = useAtomValue(
+    serverEnvironment.selfHostedRelayStatus({ environmentId, input: {} }),
+  );
+  const status = AsyncResult.getOrElse(statusResult, () => null);
+  if (status === null) return null;
+
+  return (
+    <SettingsSection title={gt("Self-hosted Relay")}>
+      <View className="gap-1 p-4">
+        <Text className="text-base text-foreground">
+          {status.phase === "connected"
+            ? gt("Connected")
+            : status.phase === "connecting"
+              ? gt("Connecting…")
+              : status.phase === "error"
+                ? gt("Connection error")
+                : status.phase === "disabled"
+                  ? gt("Off")
+                  : gt("Disconnected")}
+        </Text>
+        {status.publicHttpBaseUrl ? (
+          <Text selectable className="text-sm text-foreground-muted">
+            {status.publicHttpBaseUrl}
+          </Text>
+        ) : null}
+        {status.lastError ? (
+          <Text selectable className="text-sm text-danger-foreground">
+            {status.lastError}
+          </Text>
+        ) : null}
+      </View>
+    </SettingsSection>
+  );
+}
+
 function EnvironmentDetail({ environmentId }: { readonly environmentId: EnvironmentId }) {
   const gt = useGT();
   const messages = useMessages();
@@ -97,6 +139,8 @@ function EnvironmentDetail({ environmentId }: { readonly environmentId: Environm
     ) ?? false;
   const canManageProviders = useEnvironmentScope(environmentId, AuthProvidersManageScope);
   const canRead = useEnvironmentScope(environmentId, AuthOrchestrationReadScope);
+  const canReadRelay = useEnvironmentScope(environmentId, AuthRelayReadScope);
+  const selfHostedRelaySupported = config?.environment.capabilities.selfHostedRelay === true;
   const busy = !connected || pending !== null || running || providerBusy;
   const disabled = !allowed || busy;
   const version = config?.environment.serverVersion;
@@ -222,6 +266,9 @@ function EnvironmentDetail({ environmentId }: { readonly environmentId: Environm
                 navigation.navigate("SettingsEnvironmentNew", { routeFor: environmentId })
               }
             />
+            {selfHostedRelaySupported && canReadRelay ? (
+              <SelfHostedRelayStatusSection environmentId={environmentId} />
+            ) : null}
             {outdated ? (
               <OutdatedServerUpdateSection
                 environmentId={environmentId}

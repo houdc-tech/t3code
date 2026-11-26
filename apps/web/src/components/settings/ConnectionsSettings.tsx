@@ -156,6 +156,8 @@ import {
   type ConnectDeviceRevokeRequest,
   RevokeConnectDeviceDialog,
 } from "./RevokeConnectDeviceDialog";
+import { SelfHostedRelaySettings, useSelfHostedRelayStatus } from "./SelfHostedRelaySettings";
+import { advertisedSelfHostedRelayEndpoint } from "@t3tools/client-runtime/connection";
 
 // Sessions T3 Connect minted for a device signed in to the linked account.
 const CLOUD_CONNECT_SESSION_SUBJECT = "cloud-connect";
@@ -841,12 +843,22 @@ function ConnectionsSettingsContent({
     }
   };
   const tailscaleHttpsEndpoint = desktopAdvertisedEndpoints.find(isTailscaleHttpsEndpoint) ?? null;
+  const selfHostedRelaySupported =
+    accessEnvironment?.serverConfig?.environment.capabilities.selfHostedRelay === true;
+  const selfHostedRelayStatus = useSelfHostedRelayStatus(
+    accessEnvironmentId,
+    selfHostedRelaySupported,
+    canReadRelay,
+  );
+  const selfHostedRelayEndpoint = advertisedSelfHostedRelayEndpoint(selfHostedRelayStatus);
   const visibleDesktopNetworkAdvertisedEndpoints = isLocalBackendNetworkAccessible
     ? desktopAdvertisedEndpoints.filter((endpoint) => !isTailscaleHttpsEndpoint(endpoint))
     : [];
-  const visibleDesktopAdvertisedEndpoints = tailscaleHttpsEndpoint
-    ? [...visibleDesktopNetworkAdvertisedEndpoints, tailscaleHttpsEndpoint]
-    : visibleDesktopNetworkAdvertisedEndpoints;
+  const visibleDesktopAdvertisedEndpoints = [
+    ...visibleDesktopNetworkAdvertisedEndpoints,
+    ...(tailscaleHttpsEndpoint ? [tailscaleHttpsEndpoint] : []),
+    ...(selfHostedRelayEndpoint ? [selfHostedRelayEndpoint] : []),
+  ];
   const defaultDesktopNetworkAdvertisedEndpoint = selectPairingEndpoint(
     visibleDesktopNetworkAdvertisedEndpoints,
     defaultAdvertisedEndpointKey,
@@ -854,7 +866,10 @@ function ConnectionsSettingsContent({
   const defaultDesktopAdvertisedEndpoint =
     defaultDesktopNetworkAdvertisedEndpoint ??
     selectPairingEndpoint(
-      tailscaleHttpsEndpoint ? [tailscaleHttpsEndpoint] : [],
+      [
+        ...(tailscaleHttpsEndpoint ? [tailscaleHttpsEndpoint] : []),
+        ...(selfHostedRelayEndpoint ? [selfHostedRelayEndpoint] : []),
+      ],
       defaultAdvertisedEndpointKey,
     );
   const defaultDesktopAdvertisedEndpointKey = defaultDesktopAdvertisedEndpoint
@@ -1410,6 +1425,13 @@ function ConnectionsSettingsContent({
                         canManage: canWriteAccess,
                       }
                 }
+              />
+            ) : null}
+            {selfHostedRelaySupported ? (
+              <SelfHostedRelaySettings
+                environmentId={accessEnvironmentId}
+                settings={accessServerConfig?.settings.selfHostedRelay}
+                status={selfHostedRelayStatus}
               />
             ) : null}
             {accessServerConfig?.environment.capabilities.previewTunnelSetting ? (

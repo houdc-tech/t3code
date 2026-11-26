@@ -48,6 +48,7 @@ import * as RpcMiddleware from "effect/rpc/RpcMiddleware";
 import { IsoDateTime, NonNegativeInt, TrimmedNonEmptyString } from "./baseSchemas.ts";
 import { SecretSourceCheckResult } from "./settingsSecretValue.ts";
 import { SecretReference } from "./secretReference.ts";
+import { SelfHostedRelayActionResult, SelfHostedRelayStatus } from "./selfHostedRelay.ts";
 import {
   ProviderAuthCancelInput,
   ProviderAuthCompleteInput,
@@ -668,6 +669,10 @@ export const WS_METHODS = {
 
   cloudGetRelayClientStatus: "cloud.getRelayClientStatus",
   cloudInstallRelayClient: "cloud.installRelayClient",
+  selfHostedRelayGetStatus: "selfHostedRelay.getStatus",
+  selfHostedRelaySubscribeStatus: "selfHostedRelay.subscribeStatus",
+  selfHostedRelayConnect: "selfHostedRelay.connect",
+  selfHostedRelayDisconnect: "selfHostedRelay.disconnect",
 
   pullRequestsList: "pullRequests.list",
   pullRequestsListStats: "pullRequests.listStats",
@@ -1220,6 +1225,31 @@ const WsCloudInstallRelayClientRpc = Rpc.make(WS_METHODS.cloudInstallRelayClient
   success: RelayClientInstallProgressEventSchema,
   error: Schema.Union([RelayClientInstallFailedError, EnvironmentAuthorizationError]),
   stream: true,
+});
+
+const WsSelfHostedRelayGetStatusRpc = Rpc.make(WS_METHODS.selfHostedRelayGetStatus, {
+  payload: Schema.Struct({}),
+  success: SelfHostedRelayStatus,
+  error: EnvironmentAuthorizationError,
+});
+
+const WsSelfHostedRelaySubscribeStatusRpc = Rpc.make(WS_METHODS.selfHostedRelaySubscribeStatus, {
+  payload: Schema.Struct({}),
+  success: SelfHostedRelayStatus,
+  error: EnvironmentAuthorizationError,
+  stream: true,
+});
+
+const WsSelfHostedRelayConnectRpc = Rpc.make(WS_METHODS.selfHostedRelayConnect, {
+  payload: Schema.Struct({}),
+  success: SelfHostedRelayActionResult,
+  error: EnvironmentAuthorizationError,
+});
+
+const WsSelfHostedRelayDisconnectRpc = Rpc.make(WS_METHODS.selfHostedRelayDisconnect, {
+  payload: Schema.Struct({}),
+  success: SelfHostedRelayActionResult,
+  error: EnvironmentAuthorizationError,
 });
 
 const WsServerReportClientActivityRpc = Rpc.make(WS_METHODS.serverReportClientActivity, {
@@ -2602,6 +2632,10 @@ export const WsRpcGroup = RpcGroup.make(
   WsServerReportClientActivityRpc,
   WsCloudGetRelayClientStatusRpc,
   WsCloudInstallRelayClientRpc,
+  WsSelfHostedRelayGetStatusRpc,
+  WsSelfHostedRelaySubscribeStatusRpc,
+  WsSelfHostedRelayConnectRpc,
+  WsSelfHostedRelayDisconnectRpc,
   WsPullRequestsListRpc,
   WsPullRequestsListStatsRpc,
   WsPullRequestsFilterOptionsRpc,
